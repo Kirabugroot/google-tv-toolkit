@@ -1,0 +1,11 @@
+#!/bin/zsh
+TV_IP=$(cat ~/.config/tvpresence/tv_ip 2>/dev/null)
+serial=$(adb devices | awk -v ip="$TV_IP" '$2=="device" && ($1 ~ ip || $1 ~ /adb-tls-connect/){print $1; exit}')
+
+if [[ -z "$serial" ]]; then
+  echo "Télé non connectée. Port affiché dans Options pour les développeurs > Débogage sans fil :"
+  read "port?Port : "
+  adb connect "$TV_IP:$port" >/dev/null && serial="$TV_IP:$port"
+fi
+
+exec scrcpy -s "$serial" --no-audio --max-size 1280 --window-title "Télé" "$@"

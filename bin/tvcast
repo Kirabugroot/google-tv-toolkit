@@ -1,0 +1,27 @@
+#!/bin/zsh
+TV_IP=$(cat ~/.config/tvpresence/tv_ip 2>/dev/null)
+url="${1:-$(pbpaste)}"
+
+if [[ -z "$TV_IP" ]]; then
+  echo "IP de la télé manquante : echo 192.168.x.x > ~/.config/tvpresence/tv_ip"
+  exit 1
+fi
+
+if [[ -z "$url" ]]; then
+  echo "Usage : tvcast <url|fichier>  (sans argument : lien du presse-papier)"
+  exit 1
+fi
+
+if [[ "$url" =~ (youtube\.com|youtu\.be) ]]; then
+  serial=$(adb devices | awk -v ip="$TV_IP" '$2=="device" && ($1 ~ ip || $1 ~ /adb-tls-connect/){print $1; exit}')
+  if [[ -n "$serial" ]]; then
+    echo "YouTube -> SmartTube : $url"
+    adb -s "$serial" shell am start -a android.intent.action.VIEW -d "'$url'" org.smarttube.stable >/dev/null && exit 0
+  fi
+fi
+
+echo "Cast -> télé : $url"
+catt -d "$TV_IP" cast "$url" 2>/dev/null && exit 0
+
+echo "Pas de vidéo dans la page, affichage de la page"
+exec catt -d "$TV_IP" cast_site "$url"
